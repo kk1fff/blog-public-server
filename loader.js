@@ -11,20 +11,21 @@ exports.startWithConfig = function startWithConfig(conf, enableDebug) {
   conf && conf.config && CONF.load(conf.config);
   conf && CONF.loadOptions(conf);
 
-  db.loadDb(function(err) {
-    if (err) {
+  db.loadDb()
+    .then(function() {
+      l.l("Db opened");
+      web.startServer();
+    }, function(err) {
       l.e("Opening DB error: " + err + ", exiting.");
       process.exit(1);
-    }
-    l.l("Db opened");
-    web.startServer();
-  });
+    });
 };
 
 process.on('SIGINT', function() {
   console.log("Will exit");
-  db.closeDb(function () {
-    l.l("Database closed");
-    process.exit(0);
-  });
+  db.closeDb()
+    .then(function () {
+      l.l("Database closed");
+      process.exit(0);
+    });
 });
