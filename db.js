@@ -1,6 +1,7 @@
 var CONF = require('./config.js'),
     sqlite = require('sqlite3'),
     l = require('./logger.js'),
+    Article = require('./article.js').Article,
     Q = require('q'),
     db,
     dbConfig = {};
@@ -32,8 +33,17 @@ function createDbConfig () {
 
 function setupTables () {
   var q = [
-    "CREATE TABLE article (id INTEGER PRIMARY KEY ASC, date INTEGER, title TEXT, content TEXT)",
-    "CREATE TABLE assets (id INTEGER PRIMARY KEY ASC, date INTEGER, originName TEXT, mime CHAR(64), content BLOB)"
+    "CREATE TABLE article (" +
+      "id INTEGER PRIMARY KEY ASC," +
+      "date INTEGER," +
+      "title TEXT," +
+      "content TEXT)",
+    "CREATE TABLE assets (" +
+      "id INTEGER PRIMARY KEY ASC," +
+      "date INTEGER," +
+      "originName TEXT," +
+      "mime CHAR(64)," +
+      "content BLOB)"
   ],
       defer = Q.defer();
 
@@ -85,6 +95,74 @@ function getDbConfig () {
   });
   return defer.promise;
 }
+
+function loadFromTableByKeyValue(table, key, expectedValue) {
+  var defer = Q.defer();
+  return defer.promise;
+};
+
+exports.getArticleById = function(id) {
+  var defer = Q.defer();
+
+  db.all('SELECT * FROM article WHERE id = ?',
+         [id],
+         function(err, rows) {
+           if (err) {
+             l.l("get article error: loading article id: " + id);
+             defer.reject(err);
+           } else {
+             var row;
+             if (rows.length > 0) {
+               row = rows[0];
+               defer.resolve(new Article({
+                 content: row.content,
+                 title:   row.title,
+                 date:    new Date(row.date),
+                 id:      row.id
+               }));
+             } else {
+               defer.resolve(null);
+             }
+           }
+         });
+  return defer.promise;
+};
+
+exports.saveArticle = function(article) {
+  var defer = Q.defer(),
+      content = article.getContent(),
+      title = article.getTitle(),
+      date = article.getDate(),
+      id = article.getId(),
+      cmd;
+
+  function sqlCallback(err) {
+    if (err) {
+      defer.reject(err, article);
+    } else {
+      defer.resolve(new Article({
+        content: article.getContent(),
+        title:   article.getTitle(),
+        date:    new Date(article.getDate()),
+        id:      article.getId() !== undefined ? article.getId() : this.lastID
+      }));
+    }
+  }
+
+  if (id == undefined) {
+    // Create a new article
+    l.l('new article: ' + JSON.stringify([content, title, date]));
+    db.run("INSERT INTO article (content, title, date) VALUES (?, ?, ?)",
+           [content, title, date],
+           sqlCallback);
+  } else {
+    db.run("UPDATE SET content=?, title=?, date=? WHERE id=?",
+           [content, title, date, id],
+           sqlCallback);
+  }
+
+  return defer.promise;
+};
 
 exports.loadDb = function () {
   var defer = Q.defer();
