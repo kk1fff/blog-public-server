@@ -1,8 +1,8 @@
-var CONF = require('./config.js'),
-    sqlite = require('sqlite3'),
-    l = require('./logger.js'),
+var CONF    = require('./config.js'),
+    sqlite  = require('sqlite3'),
+    l       = require('./logger.js'),
     Article = require('./article.js').Article,
-    Q = require('q'),
+    Q       = require('q'),
     db,
     dbConfig = {};
 
@@ -140,12 +140,16 @@ exports.saveArticle = function(article) {
     if (err) {
       defer.reject(err, article);
     } else {
-      defer.resolve(new Article({
-        content: article.getContent(),
-        title:   article.getTitle(),
-        date:    new Date(article.getDate()),
-        id:      article.getId() !== undefined ? article.getId() : this.lastID
-      }));
+      if (article.getId() === undefined || this.changes > 0) {
+        defer.resolve(new Article({
+          content: article.getContent(),
+          title:   article.getTitle(),
+          date:    new Date(article.getDate()),
+          id:      article.getId() !== undefined ? article.getId() : this.lastID
+        }));
+      } else {
+        defer.resolve(null);
+      }
     }
   }
 

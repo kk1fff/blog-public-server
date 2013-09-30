@@ -34,12 +34,12 @@ function createOrUpdate(type, req, resp) {
   .then(function(storedArticle) {
     resp.end(JSON.stringify({
       ok: true,
-      data: {
+      data: storedArticle ? {
         content: storedArticle.getContent(),
         title:   storedArticle.getTitle(),
         date:    storedArticle.getDate(),
         id:      storedArticle.getId()
-      }
+      } : null
     }));
   }, function(err) {
     resp.end(JSON.stringify({
