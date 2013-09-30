@@ -101,6 +101,36 @@ function loadFromTableByKeyValue(table, key, expectedValue) {
   return defer.promise;
 };
 
+exports.getArticlesWithLimit = function(sortedby, asc, offset, num) {
+  var defer = Q.defer();
+  var cmd = 'SELECT * FROM article ORDER BY ' + sortedby + ' ' +
+        (asc ? 'ASC' : 'DESC') + ' LIMIT ?, ?';
+
+  db.all(cmd,
+         [offset, num],
+         function(err, rows) {
+           if (err) {
+             l.l("Error getting articles: sortedby: " + sortedby + " asc: " + asc +
+                 " offset: " + offset + " num: " + num);
+             defer.reject(err);
+           } else {
+             var articles = [], i, row;
+             for (i = 0; i < rows.length; ++i) {
+               row = rows[i];
+               articles.push(new Article({
+                 content: row.content,
+                 title:   row.title,
+                 date:    new Date(row.date),
+                 id:      row.id
+               }));
+             }
+             defer.resolve(articles);
+           }
+         });
+
+  return defer.promise;
+}
+
 exports.getArticleById = function(id) {
   var defer = Q.defer();
 

@@ -78,6 +78,52 @@ app.get(/^\/api\/post\/([0-9]+)$/, function(req, resp) {
     });
 });
 
+function renderPostListWithRange(base, req, resp) {
+  resp.setHeader('Content-Type', 'text/html');
+  resp.write("<html><body>");
+  db.getArticlesWithLimit('date', true, base, 10)
+    .then(function(articles) {
+      var i, article;
+      for (i = 0; i < articles.length; ++i) {
+        article = articles[i];
+        resp.write('title: ');
+        resp.write(article.getTitle());
+        resp.write('<br />');
+        resp.write('body: <br />');
+        resp.write(article.getContent());
+        resp.write('<br /><br />');
+      }
+      resp.end('</body></html>');
+    }, function(err) {
+      resp.end("error: " + err.msg);
+    });
+}
+
+app.get(/^\/posts\/([0-9]+)$/, function(req, resp) {
+  renderPostListWithRange(parseInt(req.params[0]), req, resp);
+});
+app.get(/^\/posts$/, renderPostListWithRange.bind(null, 0));
+
+app.get(/^\/post\/([0-9]+)$/, function(req, resp) {
+  resp.setHeader('Content-Type', 'text/html');
+  resp.write("<html><body>");
+  db.getArticleById(parseInt(req.params[0]))
+    .then(function(article) {
+      if (article) {
+        resp.write('title: ');
+        resp.write(article.getTitle());
+        resp.write('<br />');
+        resp.write('body: <br />');
+        resp.write(article.getContent());
+      } else {
+        resp.write('article not found');
+      }
+      resp.end('</body></html>');
+    }, function(err) {
+      resp.end("error: " + err.msg);
+    });
+});
+
 exports.startServer = function() {
   l.l('Listening on port: ' + CONF.get('WEB_PORT'));
   app.listen(CONF.get('WEB_PORT'));
