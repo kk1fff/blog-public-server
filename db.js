@@ -156,7 +156,8 @@ exports.saveArticle = function(article) {
            [content, title, date],
            sqlCallback);
   } else {
-    db.run("UPDATE SET content=?, title=?, date=? WHERE id=?",
+    l.l('update: ' + JSON.stringify([content, title, date, id]));
+    db.run("UPDATE article SET content = ?, title = ?, date = ? WHERE id = ?",
            [content, title, date, id],
            sqlCallback);
   }

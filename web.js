@@ -1,31 +1,44 @@
-var CONF = require('./config.js'),
-    l = require('./logger.js'),
-    express = require('express'),
-    db = require('./db.js'),
+var CONF    = require('./config.js'),
+    l       = require('./logger.js'),
+    db      = require('./db.js'),
     Article = require('./article.js').Article,
-    app = express();
+    express = require('express'),
+    app     = express();
 
 app.use(express['static'](__dirname + '/pages'));
 app.use(express.bodyParser());
 
-app.post(/^\/api\/post\/update\/([0-9]+)$/, function(req, resp) {
-  
-});
-
-app.post(/^\/api\/post\/create$/, function(req, resp) {
+function createOrUpdate(type, req, resp) {
+  var id;
   resp.setHeader('Content-Type', 'text/json');
+  if (type === 'update') {
+    try {
+      id = parseInt(req.params[0]);
+    } catch (e) {
+      resp.end(JSON.stringify({
+        ok: false,
+        data: {
+          err: 'ID is required when updating an article'
+        }
+      }));
+      return;
+    }
+  }
+
   db.saveArticle(new Article({
     content: req.body.content,
-    title: req.body.title,
-    date: new Date()}))
+    title:   req.body.title,
+    date:    new Date(req.body.date),
+    id:      type === 'create' ? undefined : id
+  }))
   .then(function(storedArticle) {
     resp.end(JSON.stringify({
       ok: true,
       data: {
         content: storedArticle.getContent(),
-        title: storedArticle.getTitle(),
-        date: storedArticle.getDate(),
-        id: storedArticle.getId()
+        title:   storedArticle.getTitle(),
+        date:    storedArticle.getDate(),
+        id:      storedArticle.getId()
       }
     }));
   }, function(err) {
@@ -36,7 +49,11 @@ app.post(/^\/api\/post\/create$/, function(req, resp) {
       }
     }));
   });
-});
+}
+
+app.post(/^\/api\/post\/([0-9]+)\/update$/, createOrUpdate.bind(null, 'update'));
+
+app.post(/^\/api\/post\/create$/, createOrUpdate.bind(null, 'create'));
 
 app.get(/^\/api\/post\/([0-9]+)$/, function(req, resp) {
   resp.setHeader('Content-Type', 'text/json');
