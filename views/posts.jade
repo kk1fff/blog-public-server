@@ -1,0 +1,7 @@
+doctype 5
+include head
+body
+  h1 Posts
+  - for (var i = 0; i < articles.length; i++)
+    h2= articles[i].getTitle()
+    p= articles[i].getContent()

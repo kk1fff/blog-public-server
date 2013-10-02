@@ -7,6 +7,7 @@ var CONF    = require('./config.js'),
 
 app.use(express['static'](__dirname + '/pages'));
 app.use(express.bodyParser());
+app.engine('jade', require('jade').__express);
 
 function createOrUpdate(type, req, resp) {
   var id;
@@ -80,20 +81,15 @@ app.get(/^\/api\/post\/([0-9]+)$/, function(req, resp) {
 
 function renderPostListWithRange(base, req, resp) {
   resp.setHeader('Content-Type', 'text/html');
-  resp.write("<html><body>");
   db.getArticlesWithLimit('date', true, base, 10)
     .then(function(articles) {
-      var i, article;
-      for (i = 0; i < articles.length; ++i) {
-        article = articles[i];
-        resp.write('title: ');
-        resp.write(article.getTitle());
-        resp.write('<br />');
-        resp.write('body: <br />');
-        resp.write(article.getContent());
-        resp.write('<br /><br />');
-      }
-      resp.end('</body></html>');
+      app.render('posts.jade', { articles: articles }, function(err, html) {
+        if (!err) {
+          resp.end(html);
+        } else {
+          console.log("Error when rendering: " + err);
+        }
+      });
     }, function(err) {
       resp.end("error: " + err.msg);
     });
