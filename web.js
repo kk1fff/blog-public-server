@@ -1,9 +1,11 @@
-var CONF    = require('./config.js'),
-    l       = require('./logger.js'),
-    db      = require('./db.js'),
-    Article = require('./article.js').Article,
-    express = require('express'),
-    app     = express();
+var CONF      = require('./config.js'),
+    l         = require('./logger.js'),
+    db        = require('./db.js'),
+    Article   = require('./article.js').Article,
+    respUtils = require('./resp-utils.js'),
+    express   = require('express'),
+    crypto    = require('crypto'),
+    app       = express();
 
 app.use(express['static'](__dirname + '/pages'));
 app.use(express.bodyParser());
@@ -118,6 +120,44 @@ app.get(/^\/post\/([0-9]+)$/, function(req, resp) {
     }, function(err) {
       resp.end("error: " + err.msg);
     });
+});
+
+// new article: all new article should have a random id before it got an id
+// to maintain the status.
+var newCreatingArticle = {};
+
+function redirectToNewWithRandomId(req, resp) {
+  crypto.randomBytes(64, function(err, buf) {
+    if (err) {
+      console.log('Error redirecting new article to random: ' + err);
+      respUtils.responseError(resp, 500);
+    } else {
+      var rndString = buf.toString('hex');
+      if (rndString in newCreatingArticle) {
+        // If the random id is used, generate a new one.
+        redirectToNewWithRandomId(req, resp);
+      } else {
+        newCreatingArticle[rndString] = {};
+        resp.statusCode = 302;
+        resp.setHeader("Location", "/new/" + rndString);
+        resp.end();
+      }
+    }
+  });
+}
+
+app.get(/^\/new$/, function(req, resp) {
+  // Should redirect to /new/random_token.
+  redirectToNewWithRandomId(req, resp);
+});
+
+app.get(/^\/new\/([0-9a-f]+)$/, function(req, resp) {
+  var id = req.params[0];
+  if (id in newCreatingArticle) {
+    resp.end("found");
+  } else {
+    resp.end("not found");
+  }
 });
 
 exports.startServer = function() {
