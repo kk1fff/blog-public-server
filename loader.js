@@ -9,7 +9,7 @@ exports.startWithConfig = function startWithConfig(conf, enableDebug) {
   // conf.config is the file of default config. any futher option overrides the value
   // provided in conf.
   conf && conf.config && CONF.load(conf.config);
-  conf && CONF.loadOptions(conf);
+  conf && conf.userConf && CONF.loadOptions(conf.userConf);
 
   db.loadDb()
     .then(function() {

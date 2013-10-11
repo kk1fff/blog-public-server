@@ -22,7 +22,9 @@ exports.loadOptions = function loadOptions(conf) {
   if (typeof conf == 'object') {
     var keys = Object.keys(conf);
     for (var i = 0; i < keys.length; i++) {
-      localConf[keys[i]] = conf[keys[i]];
+      if (conf[keys[i]]) {
+        localConf[keys[i]] = conf[keys[i]];
+      }
     }
   }
 };
